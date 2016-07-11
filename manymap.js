@@ -43,14 +43,15 @@
 </div>
 
 <script type="?" class="commands"><![CDATA[
+var YOUR_API_KEY = 'YOUR_API_KEY';
 const
 MAPS = 'http://maps.googleapis.com/',
-YOUR_API_KEY = 'INSERT_YOUR_API_KEY_HERE',
-MAP_INIT = '!'+ function init([lat, lng, zoom]) {
+MAP_INIT = '!'+ function init([lat, lng, zoom, api]) {
     // Shortener
     self.maps = google.maps
     // Markers
     self.markers = []
+    self.API_KEY = api
     // Creates the Map
     self.M = new maps.Map(document.getElementById('map'), {
         center: new maps.LatLng(lat, lng),
@@ -62,11 +63,12 @@ MAP_INIT = '!'+ function init([lat, lng, zoom]) {
             style: maps.MapTypeControlStyle.DROPDOWN_MENU,
         },
     })
-    self.onbeforeunload = mapact
     addEventListener('go', function mapdo(e){
-        var data = JSON.parse(e.data)
         maptie(document.getElementById('buttons'), mapkey)
+
+        var data = JSON.parse(e.data)
         if(!data.q) return;
+
         // Addrs will contain our matches
         var addrs = document.getElementById('addrs')
 
@@ -87,13 +89,13 @@ MAP_INIT = '!'+ function init([lat, lng, zoom]) {
             geocoder.geocode({'address' : locations[i].toLowerCase()}, function(rs, status){
                 if (status != google.maps.GeocoderStatus.OK) {
                     let p = document.createElement('p');
-                    p.innerHTML = 'Error: <b></b>'
+                    p.innerHTML = (i+1) + ' Error: <b></b>'
                     p.firstElementChild.textContent = status;
                     addrs.appendChild(p);
                 }
                 else if (!rs.length) {
                     let p = document.createElement('p');
-                    p.innerHTML = 'No results for <b></b>'
+                    p.innerHTML = (i+1) + ' No results for <b></b>'
                     p.firstElementChild.textContent = locations[i];
                     addrs.appendChild(p);
                 } else {
@@ -122,20 +124,26 @@ MAP_INIT = '!'+ function init([lat, lng, zoom]) {
         })(i)}
         // Function tied to the map buttons we added
         function mapkey(e){
-            var {body} = document
-            , k = e.target.accessKey.toLowerCase()
+            var {body} = document;
+            var k = e.target.accessKey.toLowerCase();
             // Avoid that the click event goes on (we capture it).
             e.preventDefault()
             // Creates a static image of the displayed map
+            var markerStrings = [];
+            for(var i=0; i < markers.length; i++){
+                var p = markers[i].getPosition();
+                markerStrings.push('&markers=' + p.lat() + ',' + p.lng());
+            }
             var u =
-                'https://maps.googleapis.com/maps/api/staticmap'+
-                '?key=' + YOUR_API_KEY +
+                'https://maps.googleapis.com/maps/api/staticmap' +
+                '?key=' + API_KEY +
                 '&maptype='+ M.getMapTypeId() +
                 '&center='+ M.getCenter().toUrlValue() +
                 '&zoom='+ M.getZoom() +
-                '&size='+ body.clientWidth +'x'+ body.clientHeight;
+                '&size='+ body.clientWidth +'x'+ body.clientHeight +
+                markerStrings.join('');
             // Sends the url back to the command so it can do stuff.
-            mapact(k, u)
+            mapact(k, u);
         }
     }, false)
     // Ties the mapkey action to all buttons (copy|paste)
@@ -183,8 +191,10 @@ CmdUtils.CreateCommand({
             let div = doc.createElement('div'), script = doc.createElement('script')
             // Buttons for copy/paste
             div.innerHTML =
-            '<style id="init">'+ feed.dom.getElementById("map-css").textContent +
-            '</style><div id="buttons">'+
+            '<style id="init">' +
+                feed.dom.getElementById("map-css").textContent +
+            '</style>' +
+            '<div id="buttons">'+
                 '<input type="button" accesskey="c" value="(C)opy">' +
                 '<input type="button" accesskey="v" value="Insert (V)">' +
             '</div>'
@@ -192,7 +202,7 @@ CmdUtils.CreateCommand({
             // Script that does the things
             script.type = 'application/javascript;version=1.8'
             // We init the map with our coords
-            script.innerHTML = MAP_INIT + '('+ uneval([gCoords.lat, gCoords.lon, 12]) +')'
+            script.innerHTML = MAP_INIT + '('+ uneval([gCoords.lat, gCoords.lon, 12, YOUR_API_KEY]) +')'
             pb.appendChild(script)
         }
         var win = doc.defaultView
@@ -217,6 +227,7 @@ CmdUtils.CreateCommand({
     // Stuff to do after we receive a message from the buttons on the map.
     _act: function map_act(e){
         var url = e.data
+        displayMessage("Event", map_act.me);
         // Needed otherwise pasted maps get erased
         if(url){
             let img = '<img src="'+ Utils.escapeHtml(url) +'"/>'
