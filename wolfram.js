@@ -3,3 +3,33 @@ CmdUtils.makeSearchCommand({
   name: "wolfram",
   url: "http://www.wolframalpha.com/input/?i={QUERY}",
 });
+
+const WA = 'http://www.wolframalpha.com/';
+CmdUtils.CreateCommand({
+  name: 'ww',
+  description: "wolframalpha",
+  author: 'satyr', license: 'MIT',
+  argument: noun_arb_text,
+  icon: WA +'favicon_calculate.ico',
+  execute: function wa_execute({object: {text}}){
+    if(text.endsWith("||"))
+        text = text.slice(0, -2);
+    Utils.openUrlInBrowser(this._url(text));
+  },
+  preview: function (pb, {object: {text}}){
+    if(!text.endsWith("||")) return;
+    text = text.slice(0, -2);
+    var doc = pb.ownerDocument;
+    var win = doc.defaultView;
+    var ifr = doc.getElementById('cont');
+    ifr.setAttribute('style', 'display:block; border:none; width:100%; height:100%;')
+    ifr.src = this._url(text);
+    // pb.innerHTML = this._url(text);
+  },
+  _url: function wa__url(i) WA +'input/?i='+ i.replace(" ", "+"),
+  previewUrl:
+    'data:text/html,<head><meta charset=UTF-8>'+
+    '<div style="width=100%;height=100%">' +
+        '<iframe id="cont" />' +
+    '</div>'
+});
