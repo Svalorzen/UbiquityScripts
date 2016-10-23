@@ -49,6 +49,7 @@ CmdUtils.CreateCommand({
     search = search.replace("___", "\\b(.*)\\b");
     var document = CmdUtils.getDocument();
     var text = document.documentElement.innerText;
+    pblock.innerHTML = search + "<br>";
     var regex = new RegExp(search, "gi");
     var matches = [];
     var match;
@@ -62,10 +63,10 @@ CmdUtils.CreateCommand({
             matches.push(match);
     }
     if (matches.length == 0) {
-        pblock.innerHTML = "No matches."
+        pblock.innerHTML += "No matches."
         return;
     }
     matches = matches.filter(onlyUnique);
-    pblock.innerHTML = matches.join("<br>");
+    pblock.innerHTML += matches.join("<br>");
   },
 });
