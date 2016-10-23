@@ -206,10 +206,26 @@ CmdUtils.CreateCommand({
             pb.appendChild(script)
         }
         var win = doc.defaultView
+        // Format text depending if it was selected or not (no API for it so we guess)
+        var html = args.object.html;
+        var txt = args.object.text;
+        var search = args.object.text.split(/[,\n;.]/);
+        var realInput = "";
+        if (html != txt || search.length > 1) {
+            // Selected
+            for (var i = 0; i < search.length; ++i) {
+                if (/^\s*$/.test(search[i])) continue;
+                realInput += search[i].trim() + "|";
+            }
+            realInput += "|";
+        } else {
+            // Written
+            realInput = txt;
+        }
         // Sends lookup event to map.
         win.dispatchEvent(new win.MessageEvent('go', {
             data: JSON.stringify({
-                q: args.object.text
+                q: realInput
             }),
             origin: '*',
             source: win,
